@@ -5,7 +5,7 @@
 	app.controller('GameController', function () {
 		this.startNewGame = function () {
 			this.player = 'X';
-			this.board = copyBoard(initialBoard);
+			this.board = initialBoard;
 			this.status = 'Ready to play!';
 			this.eval = 0;
 			this.nodes = 0;
@@ -13,12 +13,13 @@
 		};
 		this.startNewGame();
 		
-		this.makeMove = function (row, column, allowComputer) { 
+		this.makeMove = function (square, allowComputer) { 
 			this.newGame = false;
 			allowComputer = typeof allowComputer !== 'undefined' ? allowComputer : true;
+			
 			var winner = getWinner(this.board);
-			if (this.board.rows[row].squares[column] == emptySquare && winner == emptySquare) {
-				this.board.rows[row].squares[column] = this.player;
+			if (getSquare(this.board, square) == emptySquare && winner == emptySquare) {
+				this.board = setSquare(this.board, square, this.player);
 				this.player = this.player == 'X' ? 'O' : 'X';
 				
 				if ((winner = getWinner(this.board)) != emptySquare) {
@@ -29,7 +30,7 @@
 						var best = getBestMove(this.board, this.player);
 						this.eval = best.eval;
 						this.nodes = nodes;
-						this.makeMove(best.row, best.col, false);
+						this.makeMove(best.square, false);
 					}
 				} else {
 					this.status =  'It\'s a draw!';
@@ -40,13 +41,13 @@
 		this.makeComputerPlay = function () {
 			if (isEmpty(this.board) && this.player == 'X') {
 				// The corner is known to be the best opening move
-				this.makeMove(2, 2, false);
+				this.makeMove(8, false);
 			} else if (!isFull(this.board)) {
 				nodes = 0;
 				var best = getBestMove(this.board, this.player);
 				this.eval = best.eval;
 				this.nodes = nodes;
-				this.makeMove(best.row, best.col, false);
+				this.makeMove(best.square, false);
 			}
 		};
 	});
@@ -57,38 +58,33 @@
 		nodes++;
 		var winner = getWinner(board);
 		if (winner != emptySquare) {
-			return { eval: winner == 'X' ? 100 : -100, row: -1, col: -1, depth: 0 };
+			return { eval: winner == 'X' ? 100 : -100, square: -1, depth: 0 };
 		}
 
 		if (isFull(board)) {
-			return { eval: 0, row: -1, col: -1, depth: 0 }
+			return { eval: 0, square: -1, depth: 0 }
 		}
 
-		var best = { eval: sideToMove == 'X' ? -1000000 : 1000000, row: -1, col: -1, depth: 0 };
+		var best = { eval: sideToMove == 'X' ? -1000000 : 1000000, square: -1, depth: 0 };
 		var test;
 
-		for (var i = 0; i < 3; i++) {
-			for (var j = 0; j < 3; j++) {
-				if (board.rows[i].squares[j] == emptySquare) {
-					var copy = copyBoard(board);
-					copy.rows[i].squares[j] = sideToMove;
+		for (var i = 0; i < 9; i++) {
+			if (getSquare(board, i) == emptySquare) {
+				var copy = board;
+				copy = setSquare(copy, i, sideToMove);
+				test = getBestMove(copy, sideToMove == 'X' ? 'O' : 'X');
 
-					test = getBestMove(copy, sideToMove == 'X' ? 'O' : 'X');
-
-					if (sideToMove == 'X') {
-						if (test.eval - test.depth > best.eval) {
-							best.row = i;
-							best.col = j;
-							best.eval = test.eval - test.depth;
-							best.depth = test.depth + 1;
-						}
-					} else {
-						if (test.eval + test.depth < best.eval) {
-							best.row = i;
-							best.col = j;
-							best.eval = test.eval + test.depth;
-							best.depth = test.depth + 1;
-						}
+				if (sideToMove == 'X') {
+					if (test.eval - test.depth > best.eval) {
+						best.square = i;
+						best.eval = test.eval - test.depth;
+						best.depth = test.depth + 1;
+					}
+				} else {
+					if (test.eval + test.depth < best.eval) {
+						best.square = i;
+						best.eval = test.eval + test.depth;
+						best.depth = test.depth + 1;
 					}
 				}
 			}
@@ -96,80 +92,51 @@
 
 		return best;
 	};
-	
-	var copyBoard = function (board) {
-		return {
-			rows: [
-				{ squares: { 0: board.rows[0].squares[0], 1: board.rows[0].squares[1], 2: board.rows[0].squares[2] } }, 
-				{ squares: { 0: board.rows[1].squares[0], 1: board.rows[1].squares[1], 2: board.rows[1].squares[2] } }, 
-				{ squares: { 0: board.rows[2].squares[0], 1: board.rows[2].squares[1], 2: board.rows[2].squares[2] } }]
-		};
-	};
-	
+		
 	var isFull = function (board) {
-		for (var i = 0; i < 3; i++) {
-			for (var j = 0; j < 3; j++) {
-				if (board.rows[i].squares[j] == emptySquare) {
-					return false;
-				}
-			}
-		}
-
-		return true;
+		return !board.match(new RegExp(emptySquare, 'gi'));
 	};	
 	
 	var isEmpty = function (board) {
-		for (var i = 0; i < 3; i++) {
-			for (var j = 0; j < 3; j++) {
-				if (board.rows[i].squares[j] != emptySquare) {
-					return false;
-				}
-			}
-		}
-
-		return true;
+		return board == initialBoard;
 	};
 	
 	var getWinner = function (board) {
 		// Horizontal
-		if (board.rows[0].squares[0] != emptySquare && board.rows[0].squares[0] == board.rows[0].squares[1] && board.rows[0].squares[1] == board.rows[0].squares[2]) {
-			return board.rows[0].squares[0];
-		}
-		if (board.rows[1].squares[0] != emptySquare && board.rows[1].squares[0] == board.rows[1].squares[1] && board.rows[1].squares[1] == board.rows[1].squares[2]) {
-			return board.rows[1].squares[0];
-		}
-		if (board.rows[2].squares[0] != emptySquare && board.rows[2].squares[0] == board.rows[2].squares[1] && board.rows[2].squares[1] == board.rows[2].squares[2]) {
-			return board.rows[2].squares[0];
+		for (var i = 0; i < 3; i++) {
+			if (isTriplet(board, i * 3 + 0, i * 3 + 1, i * 3 + 2)) {
+				return getSquare(board, i * 3 + 0);
+			}
 		}
 		
 		// Vertical
-		if (board.rows[0].squares[0] != emptySquare && board.rows[0].squares[0] == board.rows[1].squares[0] && board.rows[1].squares[0] == board.rows[2].squares[0]) {
-			return board.rows[0].squares[0];
-		}
-		if (board.rows[0].squares[1] != emptySquare && board.rows[0].squares[1] == board.rows[1].squares[1] && board.rows[1].squares[1] == board.rows[2].squares[1]) {
-			return board.rows[0].squares[1];
-		}
-		if (board.rows[0].squares[2] != emptySquare && board.rows[0].squares[2] == board.rows[1].squares[2] && board.rows[1].squares[2] == board.rows[2].squares[2]) {
-			return board.rows[0].squares[2];
+		for (var i = 0; i < 3; i++) {
+			if (isTriplet(board, i, i + 3, i + 6)) {
+				return getSquare(board, i);
+			}
 		}
 		
 		// Diagonal
-		if (board.rows[0].squares[0] != emptySquare && board.rows[0].squares[0] == board.rows[1].squares[1] && board.rows[1].squares[1] == board.rows[2].squares[2]) {
-			return board.rows[0].squares[0];
-		}
-		if (board.rows[2].squares[0] != emptySquare && board.rows[2].squares[0] == board.rows[1].squares[1] && board.rows[1].squares[1] == board.rows[0].squares[2]) {
-			return board.rows[2].squares[0];
+		if (isTriplet(board, 0, 4, 8) || isTriplet(board, 2, 4, 6)) {
+			return getSquare(board, 4);
 		}
 		
 		return emptySquare;
 	};
 	
+	var isTriplet = function (board, square1, square2, square3) {
+		return getSquare(board, square1) != emptySquare && getSquare(board, square1) == getSquare(board, square2) && getSquare(board, square2) == getSquare(board, square3);
+	};
+	
+	var setSquare = function (board, square, player) {
+		return board.substr(0, square) + player + board.substr(square + 1);
+	};
+	
+	var getSquare = function (board, square) {
+		return board.charAt(square);
+	};
+	
 	var emptySquare = ' ';
 	
-	var initialBoard = {
-		rows: [
-			{ squares: { 0: emptySquare, 1: emptySquare, 2: emptySquare } }, 
-			{ squares: { 0: emptySquare, 1: emptySquare, 2: emptySquare } }, 
-			{ squares: { 0: emptySquare, 1: emptySquare, 2: emptySquare } }]
-	};
+	var initialBoard = emptySquare + emptySquare + emptySquare + emptySquare + emptySquare + emptySquare + emptySquare + emptySquare + emptySquare;
 })();

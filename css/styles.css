@@ -12,8 +12,8 @@
 }
 #ttt-board .ttt-square {
 	display: inline-block;
-	height: 149px;
-	width: 149px;
+	height: 148px;
+	width: 148px;
 	margin: 0 2px 2px 0;
 	font-size: 149px;
 	line-height: 149px;

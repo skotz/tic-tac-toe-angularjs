@@ -17,9 +17,7 @@
 				<button class="btn btn-default" ng-click="game.makeComputerPlay()">Computer Move</button>
 			</div>
 			<div id="ttt-board">
-				<div class="ttt-row" data-ng-repeat="row in game.board.rows">
-					<div class="ttt-square {{square === ' ' ? 'ttt-available' : ''}}" data-ng-repeat="square in row.squares" ng-click="game.makeMove($parent.$index, $index)">{{square}}</div>
-				</div>
+				<div class="ttt-square {{square === ' ' ? 'ttt-available' : ''}}" data-ng-repeat="square in game.board track by $index" ng-click="game.makeMove($index, $index)">{{square}}</div>
 			</div>
 			<div>
 				<h2>{{game.status}}</h2>
