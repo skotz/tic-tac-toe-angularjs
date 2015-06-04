@@ -1,0 +1,33 @@
+#ttt-board {
+	height: 450px;
+	width: 450px;
+	background-color: #CCCCCC;
+	border-radius: 3px;
+	margin: auto;
+	overflow: hidden;
+	box-shadow: 0 0 5px 0 rgba(128, 128, 128, 0.5);
+}
+#ttt-board .ttt-row {
+	width: 500px;
+}
+#ttt-board .ttt-square {
+	display: inline-block;
+	height: 149px;
+	width: 149px;
+	margin: 0 2px 2px 0;
+	font-size: 149px;
+	line-height: 149px;
+	text-align: center;
+	text-transform: uppercase;
+	background-color: #EEEEEE;
+	float: left;
+}
+h1,
+h2,
+h3 {
+	text-align: center;
+}
+.ttt-controls {
+	text-align: center;
+	height: 50px;
+}
